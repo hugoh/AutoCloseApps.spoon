@@ -2,7 +2,7 @@ local obj = {}
 obj.__index = obj
 
 obj.name = "AutoCloseApps"
-obj.version = "1.0"
+obj.version = "1.0.1"
 obj.author = "Hugo Haas"
 obj.license = "MIT"
 obj.homepage = "https://github.com/hugoh/AutoCloseApps.spoon"
@@ -44,8 +44,7 @@ function obj:start()
 
 	-- Set up a window filter to track focus changes
 	self.windowFilter = hs.window.filter.new():setDefaultFilter({})
-	self.windowFilter:subscribe(hs.window.filter.windowFocused, function(win)
-		local appName = win:application():name()
+	self.windowFilter:subscribe(hs.window.filter.windowFocused, function(_, appName)
 		if self:isMonitored(appName) then
 			self.logger.df("Updating last activity for %s", appName)
 			self:updateLastActiveTime(appName)
