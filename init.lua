@@ -42,8 +42,10 @@ function obj:start()
 		self:updateLastActiveTime(appConfig.name)
 	end
 
-	-- Set up a window filter to track focus changes
-	self.windowFilter = hs.window.filter.new():setDefaultFilter({})
+	-- Set up a window filter scoped to only monitored apps
+	local names = {}
+	for _, c in ipairs(self.monitoredApps) do names[#names + 1] = c.name end
+	self.windowFilter = hs.window.filter.new(names)
 	self.windowFilter:subscribe(hs.window.filter.windowFocused, function(_, appName)
 		if self:isMonitored(appName) then
 			self.logger.df("Updating last activity for %s", appName)
