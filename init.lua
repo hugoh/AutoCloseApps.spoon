@@ -17,13 +17,9 @@ obj.windowFilter = nil
 -- Logger
 obj.logger = hs.logger.new(obj.name, "info")
 
-function obj:updateLastActiveTime(name)
-	self.lastActiveTimes[name] = os.time()
-end
+function obj:updateLastActiveTime(name) self.lastActiveTimes[name] = os.time() end
 
-function obj:getLastActiveTime(name)
-	return self.lastActiveTimes[name]
-end
+function obj:getLastActiveTime(name) return self.lastActiveTimes[name] end
 
 function obj:monitor(appConfigs)
 	self.monitoredApps = appConfigs
@@ -40,7 +36,9 @@ function obj:start()
 
 	-- Set up a window filter scoped to only monitored apps
 	local names = {}
-	for _, c in ipairs(self.monitoredApps) do names[#names + 1] = c.name end
+	for _, c in ipairs(self.monitoredApps) do
+		names[#names + 1] = c.name
+	end
 	self.windowFilter = hs.window.filter.new(names)
 	self.windowFilter:subscribe(hs.window.filter.windowFocused, function(_, appName)
 		self.logger.df("Updating last activity for %s", appName)

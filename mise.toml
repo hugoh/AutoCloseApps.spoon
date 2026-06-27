@@ -1,0 +1,22 @@
+[tools]
+actionlint = "latest"
+dprint = "latest"
+ghalint = "latest"
+gitleaks = "latest"
+hk = "latest"
+lua = "5.4"
+rumdl = "latest"
+stylua = "latest"
+taplo = "latest"
+tombi = "latest"
+typos = "latest"
+zizmor = "latest"
+
+[hooks]
+postinstall = ["luarocks install luacheck"]
+
+[settings]
+experimental = true # for hooks
+
+[env]
+HK_PKL_BACKEND = "pklr"

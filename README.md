@@ -22,6 +22,7 @@ If you're looking for other solutions in this space, consider:
 
 1. Ensure you have [Hammerspoon](https://www.hammerspoon.org) installed
 2. Clone this repository to your Spoons directory:
+
 ```bash
 cd ~/.hammerspoon/Spoons
 git clone https://github.com/hugoh/AutoCloseApps.spoon.git
