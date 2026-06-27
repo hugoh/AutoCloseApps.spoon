@@ -10,9 +10,10 @@ obj.homepage = "https://github.com/hugoh/AutoCloseApps.spoon"
 -- Internal state
 obj.lastActiveTimes = {}
 obj.monitoredApps = {}
+obj.monitoredAppsSet = {}
 obj.quitTimer = nil
 obj.quitCheckInterval = 600 -- Check every 10 minutes by default
-obj.windowFilter = nil
+obj.appWatcher = nil
 
 -- Logger
 obj.logger = hs.logger.new(obj.name, "info")
@@ -23,6 +24,10 @@ function obj:getLastActiveTime(name) return self.lastActiveTimes[name] end
 
 function obj:monitor(appConfigs)
 	self.monitoredApps = appConfigs
+	self.monitoredAppsSet = {}
+	for _, c in ipairs(appConfigs) do
+		self.monitoredAppsSet[c.name] = true
+	end
 	return self
 end
 
@@ -34,16 +39,14 @@ function obj:start()
 		self:updateLastActiveTime(appConfig.name)
 	end
 
-	-- Set up a window filter scoped to only monitored apps
-	local names = {}
-	for _, c in ipairs(self.monitoredApps) do
-		names[#names + 1] = c.name
-	end
-	self.windowFilter = hs.window.filter.new(names)
-	self.windowFilter:subscribe(hs.window.filter.windowFocused, function(_, appName)
-		self.logger.df("Updating last activity for %s", appName)
-		self:updateLastActiveTime(appName)
+	-- Watch for app activation events to track last active time
+	self.appWatcher = hs.application.watcher.new(function(appName, eventType, _)
+		if eventType == hs.application.watcher.activated and self.monitoredAppsSet[appName] then
+			self.logger.df("Updating last activity for %s", appName)
+			self:updateLastActiveTime(appName)
+		end
 	end)
+	self.appWatcher:start()
 
 	-- Start a timer to check for idle applications
 	self.quitTimer = hs.timer.doEvery(self.quitCheckInterval, hs.fnutils.partial(self.checkForIdleApps, self))
@@ -58,9 +61,9 @@ function obj:stop()
 		self.quitTimer:stop()
 		self.quitTimer = nil
 	end
-	if self.windowFilter then
-		self.windowFilter:unsubscribe(hs.window.filter.windowFocused)
-		self.windowFilter = nil
+	if self.appWatcher then
+		self.appWatcher:stop()
+		self.appWatcher = nil
 	end
 end
 
