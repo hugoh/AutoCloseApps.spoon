@@ -11,22 +11,18 @@ obj.homepage = "https://github.com/hugoh/AutoCloseApps.spoon"
 obj.lastActiveTimes = {}
 obj.monitoredApps = {}
 obj.quitTimer = nil
-obj.quitCheckInterval = 600 -- Check every 60 seconds by default
+obj.quitCheckInterval = 600 -- Check every 10 minutes by default
 obj.windowFilter = nil
 
 -- Logger
 obj.logger = hs.logger.new(obj.name, "info")
 
-local function normalizeAppName(name)
-	return string.gsub(name, "%.", "DOT")
-end
-
 function obj:updateLastActiveTime(name)
-	self.lastActiveTimes[normalizeAppName(name)] = os.time()
+	self.lastActiveTimes[name] = os.time()
 end
 
 function obj:getLastActiveTime(name)
-	return self.lastActiveTimes[normalizeAppName(name)]
+	return self.lastActiveTimes[name]
 end
 
 function obj:monitor(appConfigs)
@@ -47,10 +43,8 @@ function obj:start()
 	for _, c in ipairs(self.monitoredApps) do names[#names + 1] = c.name end
 	self.windowFilter = hs.window.filter.new(names)
 	self.windowFilter:subscribe(hs.window.filter.windowFocused, function(_, appName)
-		if self:isMonitored(appName) then
-			self.logger.df("Updating last activity for %s", appName)
-			self:updateLastActiveTime(appName)
-		end
+		self.logger.df("Updating last activity for %s", appName)
+		self:updateLastActiveTime(appName)
 	end)
 
 	-- Start a timer to check for idle applications
@@ -96,15 +90,6 @@ function obj:checkForIdleApps()
 			self.logger.df("App: %s, Not Running", appName)
 		end
 	end
-end
-
-function obj:isMonitored(appName)
-	for _, appConfig in ipairs(self.monitoredApps) do
-		if appConfig.name == appName then
-			return true
-		end
-	end
-	return false
 end
 
 return obj
