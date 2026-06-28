@@ -1,4 +1,5 @@
 [tools]
+"github:orhun/git-cliff" = "latest"
 actionlint = "latest"
 dprint = "latest"
 ghalint = "latest"
@@ -12,8 +13,23 @@ tombi = "latest"
 typos = "latest"
 zizmor = "latest"
 
+[tasks.package]
+run = """
+rm -rf dist
+mkdir -p dist/AutoCloseApps.spoon
+cp init.lua LICENSE README.md dist/AutoCloseApps.spoon/
+cd dist
+zip -r ../AutoCloseApps.spoon.zip AutoCloseApps.spoon
+cd ..
+rm -rf dist
+"""
+description = "Build a self-contained AutoCloseApps.spoon.zip"
+
+[tasks.test]
+run = "busted test_spec.lua --verbose"
+
 [hooks]
-postinstall = ["luarocks install luacheck"]
+postinstall = ["luarocks install busted", "luarocks install luacheck"]
 
 [settings]
 experimental = true # for hooks
