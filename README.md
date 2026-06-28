@@ -20,8 +20,24 @@ If you're looking for other solutions in this space, consider:
 
 ## Installation
 
-1. Ensure you have [Hammerspoon](https://www.hammerspoon.org) installed
-2. Clone this repository to your Spoons directory:
+Ensure you have [Hammerspoon](https://www.hammerspoon.org) installed, then choose a method:
+
+### Release zip (recommended)
+
+1. Download `AutoCloseApps.spoon.zip` from the [latest release](https://github.com/hugoh/AutoCloseApps.spoon/releases/latest)
+2. Unzip — this produces an `AutoCloseApps.spoon` folder
+3. Move it to `~/.hammerspoon/Spoons/`
+4. Reload Hammerspoon (menu bar icon → Reload Config, or run `hs.reload()` in the console)
+
+### SpoonInstall (if you already use it)
+
+```lua
+spoon.SpoonInstall:installSpoonFromZip(
+  "https://github.com/hugoh/AutoCloseApps.spoon/releases/latest/download/AutoCloseApps.spoon.zip"
+)
+```
+
+### Clone from git (for development or latest changes)
 
 ```bash
 cd ~/.hammerspoon/Spoons
