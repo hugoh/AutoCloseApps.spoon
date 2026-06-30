@@ -10,7 +10,7 @@ local obj = {}
 obj.__index = obj
 
 obj.name = "AutoCloseApps"
-obj.version = "1.0.1"
+obj.version = "dev"
 obj.author = "Hugo Haas"
 obj.license = "MIT"
 obj.homepage = "https://github.com/hugoh/AutoCloseApps.spoon"
