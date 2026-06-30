@@ -159,6 +159,7 @@ describe("AutoCloseApps", function()
 			local killed = false
 			local mockApp = {
 				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
 				kill = function() killed = true end,
 			}
 			mock_hs.application.get = function(name)
@@ -170,10 +171,43 @@ describe("AutoCloseApps", function()
 			assert.is_true(killed)
 		end)
 
+		it("does not kill frontmost app even with no windows", function()
+			local killed = false
+			local mockApp = {
+				allWindows = function() return {} end,
+				isFrontmost = function() return true end,
+				kill = function() killed = true end,
+			}
+			mock_hs.application.get = function(name)
+				if name == "Safari" then return mockApp end
+			end
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 1 } })
+			AutoCloseApps.lastActiveTimes["Safari"] = os.time() - 10
+			AutoCloseApps:checkForIdleApps()
+			assert.is_false(killed)
+		end)
+
+		it("does not kill app marked excludeFromIdleClose", function()
+			local killed = false
+			local mockApp = {
+				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
+				kill = function() killed = true end,
+			}
+			mock_hs.application.get = function(name)
+				if name == "Safari" then return mockApp end
+			end
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 1, excludeFromIdleClose = true } })
+			AutoCloseApps.lastActiveTimes["Safari"] = os.time() - 10
+			AutoCloseApps:checkForIdleApps()
+			assert.is_false(killed)
+		end)
+
 		it("does not kill app that has windows", function()
 			local killed = false
 			local mockApp = {
 				allWindows = function() return { {} } end,
+				isFrontmost = function() return false end,
 				kill = function() killed = true end,
 			}
 			mock_hs.application.get = function(name)
@@ -204,6 +238,7 @@ describe("AutoCloseApps", function()
 			local killed = false
 			local mockApp = {
 				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
 				kill = function() killed = true end,
 			}
 			mock_hs.application.get = function(name)

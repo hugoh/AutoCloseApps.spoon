@@ -59,9 +59,20 @@ autoCloseApps.quitCheckInterval = 600  -- Check every 60 seconds
 autoCloseApps:monitor({
     {name = "Safari", idleTime = 3600},  -- Quit after 1 hour inactivity
     {name = "Slack", idleTime = 1800},   -- Quit after 30 minutes
-    {name = "Mail", idleTime = 7200}     -- Quit after 2 hours
+    {name = "Mail", idleTime = 7200},    -- Quit after 2 hours
+    {name = "Backblaze", idleTime = 1800, excludeFromIdleClose = true}  -- Never auto-quit
 }):start()
 ```
+
+### Safety limitations
+
+An app is only quit when it has zero open windows, is not frontmost, and has been idle for
+longer than its configured `idleTime`. However, Hammerspoon/`hs.application` has no reliable
+way to detect whether a window-less app is doing background work (uploading, syncing,
+recording, etc.) or holds unsaved state, so it's possible for this Spoon to quit such an app
+while it's busy. If you rely on an app that performs background work without a visible window
+(backup/sync clients, recorders, etc.), set `excludeFromIdleClose = true` for it, or omit it
+from `monitor()` entirely.
 
 ## API documentation
 
