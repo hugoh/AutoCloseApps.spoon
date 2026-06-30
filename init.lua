@@ -50,6 +50,9 @@ function obj:monitor(appConfigs)
 	self.monitoredAppsSet = {}
 	for _, c in ipairs(appConfigs) do
 		self.monitoredAppsSet[c.name] = true
+		-- Seed the last active time for apps that aren't tracked yet, so apps added via
+		-- monitor() after start() are eligible for idle-closing without needing a restart.
+		if self:getLastActiveTime(c.name) == nil then self:updateLastActiveTime(c.name) end
 	end
 	return self
 end

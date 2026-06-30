@@ -84,6 +84,32 @@ describe("AutoCloseApps", function()
 			local result = AutoCloseApps:monitor({})
 			assert.are.equal(AutoCloseApps, result)
 		end)
+
+		it("seeds lastActiveTimes for newly added apps", function()
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+			assert.is_number(AutoCloseApps:getLastActiveTime("Safari"))
+		end)
+
+		it("seeds lastActiveTimes for apps added after start()", function()
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+			AutoCloseApps:start()
+			assert.is_nil(AutoCloseApps:getLastActiveTime("Slack"))
+
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 }, { name = "Slack", idleTime = 1800 } })
+
+			assert.is_number(AutoCloseApps:getLastActiveTime("Slack"))
+			AutoCloseApps:stop()
+		end)
+
+		it("does not reset lastActiveTime for an already-tracked app", function()
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+			local originalTime = AutoCloseApps:getLastActiveTime("Safari")
+			AutoCloseApps.lastActiveTimes["Safari"] = originalTime - 100
+
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+
+			assert.are.equal(originalTime - 100, AutoCloseApps:getLastActiveTime("Safari"))
+		end)
 	end)
 
 	describe("updateLastActiveTime / getLastActiveTime", function()
