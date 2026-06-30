@@ -290,5 +290,32 @@ describe("AutoCloseApps", function()
 			AutoCloseApps:checkForIdleApps()
 			assert.is_true(killed)
 		end)
+
+		it("continues checking subsequent apps when one app's check errors", function()
+			local killed = false
+			local brokenApp = {
+				allWindows = function() error("boom") end,
+				isFrontmost = function() return false end,
+				kill = function() end,
+			}
+			local healthyApp = {
+				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
+				kill = function() killed = true end,
+			}
+			mock_hs.application.get = function(name)
+				if name == "Broken" then return brokenApp end
+				if name == "Safari" then return healthyApp end
+			end
+			AutoCloseApps:monitor({
+				{ name = "Broken", idleTime = 1 },
+				{ name = "Safari", idleTime = 1 },
+			})
+			AutoCloseApps.lastActiveTimes["Broken"] = os.time() - 10
+			AutoCloseApps.lastActiveTimes["Safari"] = os.time() - 10
+
+			assert.has_no.errors(function() AutoCloseApps:checkForIdleApps() end)
+			assert.is_true(killed)
+		end)
 	end)
 end)

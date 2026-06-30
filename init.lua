@@ -107,33 +107,38 @@ function obj:stop()
 	end
 end
 
-function obj:checkForIdleApps()
-	self.logger.d("Checking idle apps")
-	local currentTime = os.time()
-
-	for _, appConfig in ipairs(self.monitoredApps) do
-		local appName = appConfig.name
-		local app = hs.application.get(appName)
-		if app then
-			local idleTime = appConfig.idleTime or 3600 -- Default to 1 hour
-			local lastActive = self:getLastActiveTime(appName)
-			if lastActive and (currentTime - lastActive >= idleTime) then
-				if appConfig.excludeFromIdleClose then
-					self.logger.df("App: %s, Excluded from idle-closing", appName)
-				elseif app:isFrontmost() then
-					self.logger.df("App: %s, Frontmost", appName)
-				elseif #app:allWindows() == 0 then
-					self.logger.i("App: " .. appName .. ", Closing")
-					app:kill()
-				else
-					self.logger.df("App: %s, Has windows", appName)
-				end
+function obj:checkIdleApp(appConfig)
+	local appName = appConfig.name
+	local app = hs.application.get(appName)
+	if app then
+		local idleTime = appConfig.idleTime or 3600 -- Default to 1 hour
+		local lastActive = self:getLastActiveTime(appName)
+		local currentTime = os.time()
+		if lastActive and (currentTime - lastActive >= idleTime) then
+			if appConfig.excludeFromIdleClose then
+				self.logger.df("App: %s, Excluded from idle-closing", appName)
+			elseif app:isFrontmost() then
+				self.logger.df("App: %s, Frontmost", appName)
+			elseif #app:allWindows() == 0 then
+				self.logger.i("App: " .. appName .. ", Closing")
+				app:kill()
 			else
-				self.logger.df("App: %s, Active", appName)
+				self.logger.df("App: %s, Has windows", appName)
 			end
 		else
-			self.logger.df("App: %s, Not Running", appName)
+			self.logger.df("App: %s, Active", appName)
 		end
+	else
+		self.logger.df("App: %s, Not Running", appName)
+	end
+end
+
+function obj:checkForIdleApps()
+	self.logger.d("Checking idle apps")
+
+	for _, appConfig in ipairs(self.monitoredApps) do
+		local ok, err = pcall(self.checkIdleApp, self, appConfig)
+		if not ok then self.logger.w("App: " .. tostring(appConfig.name) .. ", Error checking: " .. tostring(err)) end
 	end
 end
 
