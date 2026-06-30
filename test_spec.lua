@@ -84,6 +84,32 @@ describe("AutoCloseApps", function()
 			local result = AutoCloseApps:monitor({})
 			assert.are.equal(AutoCloseApps, result)
 		end)
+
+		it("seeds lastActiveTimes for newly added apps", function()
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+			assert.is_number(AutoCloseApps:getLastActiveTime("Safari"))
+		end)
+
+		it("seeds lastActiveTimes for apps added after start()", function()
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+			AutoCloseApps:start()
+			assert.is_nil(AutoCloseApps:getLastActiveTime("Slack"))
+
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 }, { name = "Slack", idleTime = 1800 } })
+
+			assert.is_number(AutoCloseApps:getLastActiveTime("Slack"))
+			AutoCloseApps:stop()
+		end)
+
+		it("does not reset lastActiveTime for an already-tracked app", function()
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+			local originalTime = AutoCloseApps:getLastActiveTime("Safari")
+			AutoCloseApps.lastActiveTimes["Safari"] = originalTime - 100
+
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
+
+			assert.are.equal(originalTime - 100, AutoCloseApps:getLastActiveTime("Safari"))
+		end)
 	end)
 
 	describe("updateLastActiveTime / getLastActiveTime", function()
@@ -123,6 +149,21 @@ describe("AutoCloseApps", function()
 			local result = AutoCloseApps:start()
 			assert.are.equal(AutoCloseApps, result)
 		end)
+
+		it("stops the previous timer and watcher when called again", function()
+			AutoCloseApps:start()
+			local firstTimer = AutoCloseApps.quitTimer
+			local firstWatcher = AutoCloseApps.appWatcher
+
+			AutoCloseApps:start()
+
+			assert.is_true(firstTimer._stopped)
+			assert.is_true(firstWatcher._stopped)
+			assert.is_not_nil(AutoCloseApps.quitTimer)
+			assert.is_not_nil(AutoCloseApps.appWatcher)
+			assert.are_not.equal(firstTimer, AutoCloseApps.quitTimer)
+			assert.are_not.equal(firstWatcher, AutoCloseApps.appWatcher)
+		end)
 	end)
 
 	describe("stop()", function()
@@ -159,6 +200,7 @@ describe("AutoCloseApps", function()
 			local killed = false
 			local mockApp = {
 				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
 				kill = function() killed = true end,
 			}
 			mock_hs.application.get = function(name)
@@ -170,10 +212,43 @@ describe("AutoCloseApps", function()
 			assert.is_true(killed)
 		end)
 
+		it("does not kill frontmost app even with no windows", function()
+			local killed = false
+			local mockApp = {
+				allWindows = function() return {} end,
+				isFrontmost = function() return true end,
+				kill = function() killed = true end,
+			}
+			mock_hs.application.get = function(name)
+				if name == "Safari" then return mockApp end
+			end
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 1 } })
+			AutoCloseApps.lastActiveTimes["Safari"] = os.time() - 10
+			AutoCloseApps:checkForIdleApps()
+			assert.is_false(killed)
+		end)
+
+		it("does not kill app marked excludeFromIdleClose", function()
+			local killed = false
+			local mockApp = {
+				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
+				kill = function() killed = true end,
+			}
+			mock_hs.application.get = function(name)
+				if name == "Safari" then return mockApp end
+			end
+			AutoCloseApps:monitor({ { name = "Safari", idleTime = 1, excludeFromIdleClose = true } })
+			AutoCloseApps.lastActiveTimes["Safari"] = os.time() - 10
+			AutoCloseApps:checkForIdleApps()
+			assert.is_false(killed)
+		end)
+
 		it("does not kill app that has windows", function()
 			local killed = false
 			local mockApp = {
 				allWindows = function() return { {} } end,
+				isFrontmost = function() return false end,
 				kill = function() killed = true end,
 			}
 			mock_hs.application.get = function(name)
@@ -204,6 +279,7 @@ describe("AutoCloseApps", function()
 			local killed = false
 			local mockApp = {
 				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
 				kill = function() killed = true end,
 			}
 			mock_hs.application.get = function(name)
@@ -212,6 +288,33 @@ describe("AutoCloseApps", function()
 			AutoCloseApps:monitor({ { name = "Safari" } })
 			AutoCloseApps.lastActiveTimes["Safari"] = os.time() - 7200
 			AutoCloseApps:checkForIdleApps()
+			assert.is_true(killed)
+		end)
+
+		it("continues checking subsequent apps when one app's check errors", function()
+			local killed = false
+			local brokenApp = {
+				allWindows = function() error("boom") end,
+				isFrontmost = function() return false end,
+				kill = function() end,
+			}
+			local healthyApp = {
+				allWindows = function() return {} end,
+				isFrontmost = function() return false end,
+				kill = function() killed = true end,
+			}
+			mock_hs.application.get = function(name)
+				if name == "Broken" then return brokenApp end
+				if name == "Safari" then return healthyApp end
+			end
+			AutoCloseApps:monitor({
+				{ name = "Broken", idleTime = 1 },
+				{ name = "Safari", idleTime = 1 },
+			})
+			AutoCloseApps.lastActiveTimes["Broken"] = os.time() - 10
+			AutoCloseApps.lastActiveTimes["Safari"] = os.time() - 10
+
+			assert.has_no.errors(function() AutoCloseApps:checkForIdleApps() end)
 			assert.is_true(killed)
 		end)
 	end)

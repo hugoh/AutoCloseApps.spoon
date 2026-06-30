@@ -38,7 +38,10 @@ function obj:getLastActiveTime(name) return self.lastActiveTimes[name] end
 --- Set the list of applications to watch and their idle timeouts.
 ---
 --- Parameters:
----  * appConfigs - A list of tables, each with a `name` (string) and `idleTime` (seconds) field
+---  * appConfigs - A list of tables, each with a `name` (string) and `idleTime` (seconds) field.
+---    An optional `excludeFromIdleClose` (boolean) field can be set to `true` to never
+---    force-quit that app even when it has zero windows, e.g. for apps that may be doing
+---    background work (uploading, syncing, recording) with no open windows.
 ---
 --- Returns:
 ---  * The AutoCloseApps object, for method chaining
@@ -47,6 +50,9 @@ function obj:monitor(appConfigs)
 	self.monitoredAppsSet = {}
 	for _, c in ipairs(appConfigs) do
 		self.monitoredAppsSet[c.name] = true
+		-- Seed the last active time for apps that aren't tracked yet, so apps added via
+		-- monitor() after start() are eligible for idle-closing without needing a restart.
+		if self:getLastActiveTime(c.name) == nil then self:updateLastActiveTime(c.name) end
 	end
 	return self
 end
@@ -58,6 +64,11 @@ end
 --- Returns:
 ---  * The AutoCloseApps object, for method chaining
 function obj:start()
+	if self.quitTimer or self.appWatcher then
+		self.logger.w("AutoCloseApps already started; stopping previous instance first")
+		self:stop()
+	end
+
 	self.logger.i("Starting AutoCloseApps Spoon")
 
 	-- Initialize the last active times for monitored apps
@@ -96,29 +107,38 @@ function obj:stop()
 	end
 end
 
-function obj:checkForIdleApps()
-	self.logger.d("Checking idle apps")
-	local currentTime = os.time()
-
-	for _, appConfig in ipairs(self.monitoredApps) do
-		local appName = appConfig.name
-		local app = hs.application.get(appName)
-		if app then
-			local idleTime = appConfig.idleTime or 3600 -- Default to 1 hour
-			local lastActive = self:getLastActiveTime(appName)
-			if lastActive and (currentTime - lastActive >= idleTime) then
-				if #app:allWindows() == 0 then
-					self.logger.i("App: " .. appName .. ", Closing")
-					app:kill()
-				else
-					self.logger.df("App: %s, Has windows", appName)
-				end
+function obj:checkIdleApp(appConfig)
+	local appName = appConfig.name
+	local app = hs.application.get(appName)
+	if app then
+		local idleTime = appConfig.idleTime or 3600 -- Default to 1 hour
+		local lastActive = self:getLastActiveTime(appName)
+		local currentTime = os.time()
+		if lastActive and (currentTime - lastActive >= idleTime) then
+			if appConfig.excludeFromIdleClose then
+				self.logger.df("App: %s, Excluded from idle-closing", appName)
+			elseif app:isFrontmost() then
+				self.logger.df("App: %s, Frontmost", appName)
+			elseif #app:allWindows() == 0 then
+				self.logger.i("App: " .. appName .. ", Closing")
+				app:kill()
 			else
-				self.logger.df("App: %s, Active", appName)
+				self.logger.df("App: %s, Has windows", appName)
 			end
 		else
-			self.logger.df("App: %s, Not Running", appName)
+			self.logger.df("App: %s, Active", appName)
 		end
+	else
+		self.logger.df("App: %s, Not Running", appName)
+	end
+end
+
+function obj:checkForIdleApps()
+	self.logger.d("Checking idle apps")
+
+	for _, appConfig in ipairs(self.monitoredApps) do
+		local ok, err = pcall(self.checkIdleApp, self, appConfig)
+		if not ok then self.logger.w("App: " .. tostring(appConfig.name) .. ", Error checking: " .. tostring(err)) end
 	end
 end
 
