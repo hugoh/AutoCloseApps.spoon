@@ -123,6 +123,21 @@ describe("AutoCloseApps", function()
 			local result = AutoCloseApps:start()
 			assert.are.equal(AutoCloseApps, result)
 		end)
+
+		it("stops the previous timer and watcher when called again", function()
+			AutoCloseApps:start()
+			local firstTimer = AutoCloseApps.quitTimer
+			local firstWatcher = AutoCloseApps.appWatcher
+
+			AutoCloseApps:start()
+
+			assert.is_true(firstTimer._stopped)
+			assert.is_true(firstWatcher._stopped)
+			assert.is_not_nil(AutoCloseApps.quitTimer)
+			assert.is_not_nil(AutoCloseApps.appWatcher)
+			assert.are_not.equal(firstTimer, AutoCloseApps.quitTimer)
+			assert.are_not.equal(firstWatcher, AutoCloseApps.appWatcher)
+		end)
 	end)
 
 	describe("stop()", function()

@@ -61,6 +61,11 @@ end
 --- Returns:
 ---  * The AutoCloseApps object, for method chaining
 function obj:start()
+	if self.quitTimer or self.appWatcher then
+		self.logger.w("AutoCloseApps already started; stopping previous instance first")
+		self:stop()
+	end
+
 	self.logger.i("Starting AutoCloseApps Spoon")
 
 	-- Initialize the last active times for monitored apps
