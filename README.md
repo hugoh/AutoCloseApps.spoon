@@ -2,6 +2,7 @@
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Hammerspoon Spoon](https://img.shields.io/badge/Hammerspoon-Spoon-FFA500.svg)](https://www.hammerspoon.org/docs/index.html)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://hugoh.github.io/AutoCloseApps.spoon/)
 
 A Hammerspoon Spoon that automatically quits applications after periods of inactivity.
 
@@ -61,3 +62,7 @@ autoCloseApps:monitor({
     {name = "Mail", idleTime = 7200}     -- Quit after 2 hours
 }):start()
 ```
+
+## API documentation
+
+Full API reference is available at **<https://hugoh.github.io/AutoCloseApps.spoon/>**.
