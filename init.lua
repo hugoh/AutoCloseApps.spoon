@@ -1,3 +1,11 @@
+-- vim: set ft=lua:
+
+--- === AutoCloseApps ===
+---
+--- A Hammerspoon Spoon that automatically quits applications after periods of inactivity.
+---
+--- Download: https://github.com/hugoh/AutoCloseApps.spoon/releases/latest
+
 local obj = {}
 obj.__index = obj
 
@@ -12,7 +20,10 @@ obj.lastActiveTimes = {}
 obj.monitoredApps = {}
 obj.monitoredAppsSet = {}
 obj.quitTimer = nil
-obj.quitCheckInterval = 600 -- Check every 10 minutes by default
+--- AutoCloseApps.quitCheckInterval
+--- Variable
+--- Seconds between idle-application checks (default: 600).
+obj.quitCheckInterval = 600
 obj.appWatcher = nil
 
 -- Logger
@@ -22,6 +33,15 @@ function obj:updateLastActiveTime(name) self.lastActiveTimes[name] = os.time() e
 
 function obj:getLastActiveTime(name) return self.lastActiveTimes[name] end
 
+--- AutoCloseApps:monitor(appConfigs) -> AutoCloseApps
+--- Method
+--- Set the list of applications to watch and their idle timeouts.
+---
+--- Parameters:
+---  * appConfigs - A list of tables, each with a `name` (string) and `idleTime` (seconds) field
+---
+--- Returns:
+---  * The AutoCloseApps object, for method chaining
 function obj:monitor(appConfigs)
 	self.monitoredApps = appConfigs
 	self.monitoredAppsSet = {}
@@ -31,6 +51,12 @@ function obj:monitor(appConfigs)
 	return self
 end
 
+--- AutoCloseApps:start() -> AutoCloseApps
+--- Method
+--- Start monitoring for idle applications.
+---
+--- Returns:
+---  * The AutoCloseApps object, for method chaining
 function obj:start()
 	self.logger.i("Starting AutoCloseApps Spoon")
 
@@ -54,6 +80,9 @@ function obj:start()
 	return self
 end
 
+--- AutoCloseApps:stop()
+--- Method
+--- Stop monitoring and cancel all timers.
 function obj:stop()
 	self.logger.i("Stopping AutoCloseApps Spoon")
 	self.lastActiveTimes = {}
