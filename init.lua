@@ -69,7 +69,7 @@ function obj:start()
 		self:stop()
 	end
 
-	self.logger.i("Starting AutoCloseApps Spoon")
+	self.logger.f("Starting %s v%s", self.name, self.version)
 
 	-- Initialize the last active times for monitored apps
 	for _, appConfig in ipairs(self.monitoredApps) do
@@ -95,7 +95,7 @@ end
 --- Method
 --- Stop monitoring and cancel all timers.
 function obj:stop()
-	self.logger.i("Stopping AutoCloseApps Spoon")
+	self.logger.f("Stopping %s v%s", self.name, self.version)
 	self.lastActiveTimes = {}
 	if self.quitTimer then
 		self.quitTimer:stop()

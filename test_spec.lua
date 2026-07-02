@@ -7,6 +7,7 @@ before_each(function()
 			new = function(_name, _level)
 				return {
 					i = function() end,
+					f = function() end,
 					d = function() end,
 					df = function() end,
 					w = function() end,
