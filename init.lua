@@ -57,6 +57,17 @@ function obj:monitor(appConfigs)
 	return self
 end
 
+--- AutoCloseApps:init()
+--- Method
+--- Called automatically by `hs.loadSpoon()`. Logs the loaded version.
+---
+--- Returns:
+---  * The AutoCloseApps object, for method chaining
+function obj:init()
+	self.logger.f("Loaded %s v%s", self.name, self.version)
+	return self
+end
+
 --- AutoCloseApps:start() -> AutoCloseApps
 --- Method
 --- Start monitoring for idle applications.
@@ -68,8 +79,6 @@ function obj:start()
 		self.logger.w("AutoCloseApps already started; stopping previous instance first")
 		self:stop()
 	end
-
-	self.logger.f("Starting %s v%s", self.name, self.version)
 
 	-- Initialize the last active times for monitored apps
 	for _, appConfig in ipairs(self.monitoredApps) do
