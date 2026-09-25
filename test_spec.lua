@@ -25,7 +25,7 @@ before_each(function()
 				end,
 				activated = "activated",
 			},
-			get = function(_name) return nil end,
+			find = function(_hint, _exact) return nil end,
 		},
 		timer = {
 			doEvery = function(_interval, _fn)
@@ -63,8 +63,13 @@ local function makeMockApp(overrides)
 	return app
 end
 
+-- Only exact lookups resolve: a non-exact find falls back to scanning every
+-- window's title, which blocks Hammerspoon for seconds per missing app.
 local function registerApps(appsByName)
-	mock_hs.application.get = function(name) return appsByName[name] end
+	mock_hs.application.find = function(hint, exact)
+		assert.is_true(exact, "application lookup must be exact")
+		return appsByName[hint]
+	end
 end
 
 describe("AutoCloseApps", function()
@@ -207,7 +212,7 @@ describe("AutoCloseApps", function()
 	describe("checkForIdleApps()", function()
 		it("does nothing when app is not running", function()
 			AutoCloseApps:monitor({ { name = "Safari", idleTime = 3600 } })
-			mock_hs.application.get = function(_name) return nil end
+			registerApps({})
 			AutoCloseApps:updateLastActiveTime("Safari")
 			AutoCloseApps:checkForIdleApps()
 		end)

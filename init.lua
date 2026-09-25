@@ -118,7 +118,7 @@ end
 
 function obj:checkIdleApp(appConfig)
 	local appName = appConfig.name
-	local app = hs.application.get(appName)
+	local app = hs.application.find(appName, true)
 	if app then
 		local idleTime = appConfig.idleTime or 3600 -- Default to 1 hour
 		local lastActive = self:getLastActiveTime(appName)
