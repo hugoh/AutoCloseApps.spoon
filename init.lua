@@ -38,7 +38,7 @@ function obj:getLastActiveTime(name) return self.lastActiveTimes[name] end
 --- Set the list of applications to watch and their idle timeouts.
 ---
 --- Parameters:
----  * appConfigs - A list of tables, each with a `name` (string) and `idleTime` (seconds) field.
+---  * appConfigs - A list of tables, each with a `name` (app name or bundle ID) and `idleTime` (seconds) field.
 ---    An optional `excludeFromIdleClose` (boolean) field can be set to `true` to never
 ---    force-quit that app even when it has zero windows, e.g. for apps that may be doing
 ---    background work (uploading, syncing, recording) with no open windows.
@@ -86,10 +86,15 @@ function obj:start()
 	end
 
 	-- Watch for app activation events to track last active time
-	self.appWatcher = hs.application.watcher.new(function(appName, eventType, _)
-		if eventType == hs.application.watcher.activated and self.monitoredAppsSet[appName] then
-			self.logger.df("Updating last activity for %s", appName)
-			self:updateLastActiveTime(appName)
+	-- Apps can be monitored by name or bundle ID, but the watcher reports names.
+	self.appWatcher = hs.application.watcher.new(function(appName, eventType, app)
+		if eventType ~= hs.application.watcher.activated then return end
+		local bundleID = app and app:bundleID()
+		for _, key in ipairs({ appName, bundleID }) do
+			if self.monitoredAppsSet[key] then
+				self.logger.df("Updating last activity for %s", key)
+				self:updateLastActiveTime(key)
+			end
 		end
 	end)
 	self.appWatcher:start()
