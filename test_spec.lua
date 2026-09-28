@@ -171,6 +171,22 @@ describe("AutoCloseApps", function()
 			assert.are.equal(AutoCloseApps, result)
 		end)
 
+		for _, case in ipairs({
+			{ monitored = "Safari", activatedName = "Safari", bundleID = "com.apple.Safari" },
+			{ monitored = "com.apple.Safari", activatedName = "Safari", bundleID = "com.apple.Safari" },
+		}) do
+			it("refreshes lastActiveTime when an app monitored as " .. case.monitored .. " activates", function()
+				AutoCloseApps:monitor({ { name = case.monitored, idleTime = 3600 } })
+				AutoCloseApps:start()
+				AutoCloseApps.lastActiveTimes[case.monitored] = 0
+
+				local app = { bundleID = function() return case.bundleID end }
+				AutoCloseApps.appWatcher._cb(case.activatedName, "activated", app)
+
+				assert.is_true(AutoCloseApps:getLastActiveTime(case.monitored) > 0)
+			end)
+		end
+
 		it("stops the previous timer and watcher when called again", function()
 			AutoCloseApps:start()
 			local firstTimer = AutoCloseApps.quitTimer
