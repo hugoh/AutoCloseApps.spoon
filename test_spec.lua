@@ -1,49 +1,14 @@
-local mock_hs
+-- Busted tests for the AutoCloseApps Spoon using the shared hs_mock from spoon-tools.
+
+local hs_mock = require("hs_mock")
+
+local ctl
 local AutoCloseApps
 
 before_each(function()
-	mock_hs = {
-		logger = {
-			new = function(_name, _level)
-				return {
-					i = function() end,
-					f = function() end,
-					d = function() end,
-					df = function() end,
-					w = function() end,
-				}
-			end,
-		},
-		application = {
-			watcher = {
-				new = function(cb)
-					return {
-						_cb = cb,
-						start = function(self) self._started = true end,
-						stop = function(self) self._stopped = true end,
-					}
-				end,
-				activated = "activated",
-			},
-			find = function(_hint, _exact) return nil end,
-		},
-		timer = {
-			doEvery = function(_interval, _fn)
-				return {
-					stop = function(self) self._stopped = true end,
-				}
-			end,
-		},
-		fnutils = {
-			partial = function(fn, ...)
-				local args = { ... }
-				return function() return fn(table.unpack(args)) end
-			end,
-		},
-	}
-
-	package.loaded.hs = nil
-	_G.hs = mock_hs
+	local hs
+	hs, ctl = hs_mock.new()
+	_G.hs = hs
 
 	AutoCloseApps = dofile("init.lua")
 end)
@@ -65,10 +30,16 @@ end
 
 -- Only exact lookups resolve: a non-exact find falls back to scanning every
 -- window's title, which blocks Hammerspoon for seconds per missing app.
+-- Local, not in hs_mock: this asserts AutoCloseApps' own lookups are exact; it
+-- isn't a fake of Hammerspoon.
 local function registerApps(appsByName)
-	mock_hs.application.find = function(hint, exact)
+	for name, app in pairs(appsByName) do
+		ctl.apps[name] = app
+	end
+	local find = hs.application.find
+	hs.application.find = function(hint, exact)
 		assert.is_true(exact, "application lookup must be exact")
-		return appsByName[hint]
+		return find(hint)
 	end
 end
 
@@ -181,7 +152,7 @@ describe("AutoCloseApps", function()
 				AutoCloseApps.lastActiveTimes[case.monitored] = 0
 
 				local app = { bundleID = function() return case.bundleID end }
-				AutoCloseApps.appWatcher._cb(case.activatedName, "activated", app)
+				AutoCloseApps.appWatcher._fn(case.activatedName, hs.application.watcher.activated, app)
 
 				assert.is_true(AutoCloseApps:getLastActiveTime(case.monitored) > 0)
 			end)
@@ -194,8 +165,8 @@ describe("AutoCloseApps", function()
 
 			AutoCloseApps:start()
 
-			assert.is_true(firstTimer._stopped)
-			assert.is_true(firstWatcher._stopped)
+			assert.is_false(firstTimer:running())
+			assert.is_false(firstWatcher:isRunning())
 			assert.is_not_nil(AutoCloseApps.quitTimer)
 			assert.is_not_nil(AutoCloseApps.appWatcher)
 			assert.are_not.equal(firstTimer, AutoCloseApps.quitTimer)
