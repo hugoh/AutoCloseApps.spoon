@@ -1,7 +1,7 @@
 # AutoCloseApps Spoon
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Hammerspoon Spoon](https://img.shields.io/badge/Hammerspoon-Spoon-FFA500.svg)](https://www.hammerspoon.org/docs/index.html)
+[![Hammerspoon Spoon](https://img.shields.io/badge/Hammerspoon-Spoon-FFA500.svg)](https://autocloseapps-spoon.larve.net/)
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://autocloseapps-spoon.larve.net/)
 
 A Hammerspoon Spoon that automatically quits applications after periods of inactivity.
